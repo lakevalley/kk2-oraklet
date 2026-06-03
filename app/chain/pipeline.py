@@ -1,7 +1,8 @@
 from app.chain.steps import PromptBuilder, LLMRunner, ResponseParser, PromptBuilderInput
+from app.chain.models import ResponseParserOutput
 
 
-def build_pipeline(question: str, stats: str, model_name: str):
+def build_pipeline(question: str, stats: str, model_name: str) -> ResponseParserOutput:
     """Bygger och kör kedjan för en given fråga och statistik."""
 
     pipeline = (
