@@ -52,6 +52,9 @@ class ResponseParser(Runnable[LLMRunnerOutput, ResponseParserOutput]):
         else:
             answer = raw.strip().split("\n")[-1].strip()
 
+        if not answer:
+            answer = "Modellen kunde inte generera ett svar."
+
         return ResponseParserOutput(
             question=self.question,
             answer=answer,
