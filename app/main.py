@@ -5,6 +5,8 @@ from app.data import save_dataset, get_dataset
 from app.schemas import UploadResponse, AskRequest, AskResponse
 from app.chain.pipeline import build_pipeline
 import logging
+from app.chain.steps import ModelError
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -13,12 +15,12 @@ app = FastAPI(title="Oraklet")
 
 
 @app.get("/health")
-def health():
+def health() -> dict:
     return {"status": "ok"}
 
 
 @app.post("/data/upload")
-def upload_data(file: UploadFile):
+def upload_data(file: UploadFile) -> UploadResponse:
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Filen måste vara en CSV")
     
@@ -48,7 +50,7 @@ def upload_data(file: UploadFile):
 
 
 @app.get("/data/stats")
-def get_stats():
+def get_stats() -> dict:
     df = get_dataset()
     
     if df is None:
@@ -57,10 +59,9 @@ def get_stats():
     return df.describe().to_dict()
 
 
-from app.chain.steps import ModelError
 
 @app.post("/ai/ask")
-def ask(request: AskRequest):
+def ask(request: AskRequest) -> AskResponse:
     df = get_dataset()
     
     if df is None:
