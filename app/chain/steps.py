@@ -6,6 +6,10 @@ from app.chain.models import (
     LLMRunnerOutput,
     ResponseParserOutput,
 )
+import threading
+
+class ModelError(Exception):
+    pass
 
 
 # ─── Steg 1: Bygger prompten ─────────────────────────────────────────────────
@@ -27,15 +31,30 @@ class LLMRunner(Runnable[PromptBuilderOutput, LLMRunnerOutput]):
     name: str = "llm_runner"
 
     def invoke(self, data: PromptBuilderOutput) -> LLMRunnerOutput:
-        generator = hf_pipeline(
-            "text-generation",
-            model="HuggingFaceTB/SmolLM2-135M-Instruct"
-        )
+        result_container = []
+        error_container = []
 
-        result = generator(data.prompt, max_new_tokens=200)
-        raw = result[0]["generated_text"]
-        print("RAW OUTPUT:", raw)
-        return LLMRunnerOutput(raw_answer=raw)
+        def run_model():
+            try:
+                generator = hf_pipeline(
+                    "text-generation",
+                    model="HuggingFaceTB/SmolLM2-135M-Instruct"
+                )
+                result = generator(data.prompt, max_new_tokens=200)
+                result_container.append(result[0]["generated_text"])
+            except Exception as e:
+                error_container.append(str(e))
+
+        thread = threading.Thread(target=run_model)
+        thread.start()
+        thread.join(timeout=30)  # 30 sekunder
+
+        if thread.is_alive():
+            raise ModelError("Modellen tog för lång tid att svara.")
+        if error_container:
+            raise ModelError(f"Modellfel: {error_container[0]}")
+
+        return LLMRunnerOutput(raw_answer=result_container[0])
 
 
 # ─── Steg 3: Tolkar modellens råoutput ───────────────────────────────────────

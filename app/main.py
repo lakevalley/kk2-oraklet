@@ -53,6 +53,8 @@ def get_stats():
     return df.describe().to_dict()
 
 
+from app.chain.steps import ModelError
+
 @app.post("/ai/ask")
 def ask(request: AskRequest):
     df = get_dataset()
@@ -60,14 +62,16 @@ def ask(request: AskRequest):
     if df is None:
         raise HTTPException(status_code=400, detail="Inget dataset uppladdat")
     
-    #stats = df.describe().to_string()
     stats = df.to_string() + "\n\n" + df.describe().to_string()
     
-    result = build_pipeline(
-        question=request.question,
-        stats=stats,
-        model_name="HuggingFaceTB/SmolLM2-135M-Instruct"
-    )
+    try:
+        result = build_pipeline(
+            question=request.question,
+            stats=stats,
+            model_name="HuggingFaceTB/SmolLM2-135M-Instruct"
+        )
+    except ModelError as e:
+        raise HTTPException(status_code=500, detail=str(e))
     
     return AskResponse(
         question=result.question,
