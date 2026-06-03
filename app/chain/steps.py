@@ -7,6 +7,8 @@ from app.chain.models import (
     ResponseParserOutput,
 )
 import threading
+from app.config import MAX_NEW_TOKENS
+
 
 class ModelError(Exception):
     pass
@@ -40,7 +42,7 @@ class LLMRunner(Runnable[PromptBuilderOutput, LLMRunnerOutput]):
                     "text-generation",
                     model="HuggingFaceTB/SmolLM2-135M-Instruct"
                 )
-                result = generator(data.prompt, max_new_tokens=200)
+                result = generator(data.prompt, max_new_tokens=MAX_NEW_TOKENS)
                 result_container.append(result[0]["generated_text"])
             except Exception as e:
                 error_container.append(str(e))
