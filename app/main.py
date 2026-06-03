@@ -4,7 +4,10 @@ import io
 from app.data import save_dataset, get_dataset
 from app.schemas import UploadResponse, AskRequest, AskResponse
 from app.chain.pipeline import build_pipeline
+import logging
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Oraklet")
 
@@ -35,7 +38,8 @@ def upload_data(file: UploadFile):
         raise HTTPException(status_code=400, detail="Filen kunde inte läsas som CSV")
 
     save_dataset(df)
-    
+    logger.info(f"Dataset uppladdat: {len(df)} rader, {len(df.columns)} kolumner")    
+
     return UploadResponse(
         rows=len(df),
         columns=df.columns.tolist(),
@@ -62,6 +66,8 @@ def ask(request: AskRequest):
     if df is None:
         raise HTTPException(status_code=400, detail="Inget dataset uppladdat")
     
+    logger.info(f"Fråga mottagen: {request.question}")
+    
     stats = df.to_string() + "\n\n" + df.describe().to_string()
     
     try:
@@ -71,6 +77,7 @@ def ask(request: AskRequest):
             model_name="HuggingFaceTB/SmolLM2-135M-Instruct"
         )
     except ModelError as e:
+        logger.error(f"Modellfel: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     
     return AskResponse(
