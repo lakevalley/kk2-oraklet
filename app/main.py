@@ -21,11 +21,16 @@ def upload_data(file: UploadFile):
     
     contents = file.file.read()
 
+    if len(contents) == 0:
+        raise HTTPException(status_code=400, detail="Filen är tom")
+    
     if len(contents) > 5 * 1024 * 1024:  # 5 MB
         raise HTTPException(status_code=400, detail="Filen är för stor, max 5 MB")
 
     try:
-        df = pd.read_csv(io.BytesIO(contents))
+        df = pd.read_csv(io.BytesIO(contents), encoding="utf-8", encoding_errors="strict")
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="Filen har fel teckenkodning, använd UTF-8")
     except Exception:
         raise HTTPException(status_code=400, detail="Filen kunde inte läsas som CSV")
 
